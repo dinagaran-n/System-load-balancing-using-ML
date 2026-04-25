@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Load Engine — Network Monitor</title>
+    <link rel="stylesheet" href="style.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <!-- ══════════════════════════════════════
+     DEVICE PICKER
+══════════════════════════════════════ -->
+    <div id="picker" class="picker-screen">
+
+        <div class="picker-glow"></div>
+
+        <div class="picker-card">
+
+            <div class="picker-logo">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+            </div>
+
+            <h1 class="picker-title">Load Engine</h1>
+            <p class="picker-sub">Choose a system on your network to monitor</p>
+
+            <!-- Device List (filled dynamically) -->
+            <div class="device-list" id="device-list">
+                <div class="device-scanning">
+                    <div class="scan-ring"></div>
+                    <span>Scanning network…</span>
+                </div>
+            </div>
+
+            <div class="picker-actions">
+                <button class="btn-refresh" onclick="loadDevices()">↺ Refresh</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+     DASHBOARD
+══════════════════════════════════════ -->
+    <div id="dashboard" class="dashboard hidden">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+                Load Engine
+            </div>
+
+            <div class="active-device-pill" id="sidebar-device-name">—</div>
+
+            <nav>
+                <div class="nav-item active" id="nav-dashboard" onclick="showView('v-dashboard', this)">
+                    <span>📊</span> Dashboard
+                </div>
+                <div class="nav-item" id="nav-metrics" onclick="showView('v-metrics', this)">
+                    <span>📡</span> Live Metrics
+                </div>
+                <div class="nav-item" id="nav-history" onclick="showView('v-history', this)">
+                    <span>🗂️</span> History
+                </div>
+            </nav>
+
+            <div class="sidebar-bottom">
+                <button class="btn-back" onclick="goBack()">⇠ Switch Device</button>
+            </div>
+        </aside>
+
+        <!-- Main -->
+        <main>
+
+            <header class="dash-header">
+                <div>
+                    <div class="breadcrumb">Network Monitor › <span id="hdr-device">—</span></div>
+                    <h2 class="dash-title">Predictive Load Balancer</h2>
+                </div>
+                <div class="hdr-pills">
+                    <div class="pill">
+                        <span class="dot-blink"></span>
+                        <span class="pill-label">Engine</span>
+                        <span class="pill-val green">ACTIVE</span>
+                    </div>
+                    <div class="pill">
+                        <span class="pill-label">Updated</span>
+                        <span class="pill-val" id="last-update">--:--</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- VIEW: Dashboard -->
+            <div id="v-dashboard" class="view active-view">
+
+                <div class="kpi-row">
+
+                    <div class="kpi-card">
+                        <div class="kpi-top">
+                            <span class="kpi-label">CPU</span>
+                            <span class="kpi-emoji">🖥️</span>
+                        </div>
+                        <div class="kpi-val-row">
+                            <span class="kpi-val" id="cpu-val">--</span>
+                            <span class="kpi-unit">%</span>
+                        </div>
+                        <div class="bar-track">
+                            <div class="bar-fill" id="cpu-bar"></div>
+                        </div>
+                        <div class="kpi-status" id="cpu-status">Waiting…</div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-top">
+                            <span class="kpi-label">Memory</span>
+                            <span class="kpi-emoji">💾</span>
+                        </div>
+                        <div class="kpi-val-row">
+                            <span class="kpi-val" id="mem-val">--</span>
+                            <span class="kpi-unit">%</span>
+                        </div>
+                        <div class="bar-track">
+                            <div class="bar-fill bar-teal" id="mem-bar"></div>
+                        </div>
+                        <div class="kpi-status" id="mem-status">Waiting…</div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-top">
+                            <span class="kpi-label">Processes</span>
+                            <span class="kpi-emoji">⚙️</span>
+                        </div>
+                        <div class="kpi-val-row">
+                            <span class="kpi-val" id="proc-val">--</span>
+                        </div>
+                        <div class="kpi-status" style="margin-top:1.6rem">Active system tasks</div>
+                    </div>
+
+                    <div class="kpi-card kpi-pred">
+                        <div class="kpi-top">
+                            <span class="kpi-label">Load Level</span>
+                            <span class="kpi-emoji">🔮</span>
+                        </div>
+                        <div class="kpi-val-row">
+                            <span class="kpi-val" id="pred-val">--</span>
+                        </div>
+                        <div class="kpi-status" style="margin-top:1.6rem">Predicted next window</div>
+                    </div>
+
+                </div>
+
+                <!-- Main chart -->
+                <div class="chart-panel">
+                    <div class="chart-panel-hdr">
+                        <span class="section-label">Forecast vs Observation</span>
+                        <span class="legend-row">
+                            <span class="leg-dot blue"></span>Predicted
+                            <span class="leg-dot green" style="margin-left:14px"></span>Actual
+                        </span>
+                    </div>
+                    <div class="chart-wrap"><canvas id="forecastChart"></canvas></div>
+                </div>
+
+            </div>
+
+            <!-- VIEW: Live Metrics -->
+            <div id="v-metrics" class="view">
+                <div class="section-label" style="margin-bottom:1.2rem">📡 Live CPU — <span id="lm-device">—</span>
+                </div>
+                <div class="chart-panel" style="margin-bottom:1.5rem">
+                    <div class="chart-wrap"><canvas id="cpuRollChart"></canvas></div>
+                </div>
+                <div class="kpi-row">
+                    <div class="kpi-card">
+                        <div class="kpi-top"><span class="kpi-label">CPU</span></div>
+                        <div class="kpi-val-row"><span class="kpi-val" id="lm-cpu">--</span><span
+                                class="kpi-unit">%</span></div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-top"><span class="kpi-label">Memory</span></div>
+                        <div class="kpi-val-row"><span class="kpi-val" id="lm-mem">--</span><span
+                                class="kpi-unit">%</span></div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-top"><span class="kpi-label">Processes</span></div>
+                        <div class="kpi-val-row"><span class="kpi-val" id="lm-procs">--</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: History -->
+            <div id="v-history" class="view">
+                <div class="section-label" style="margin-bottom:1.2rem">🗂️ Routing History — <span
+                        id="hist-device">—</span></div>
+                <div class="chart-panel">
+                    <div class="hist-table" id="full-hist"></div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Server Allocation Panel -->
+        <aside class="alloc-panel">
+            <div class="alloc-header">
+                <div class="alloc-title">Server Allocation</div>
+                <div class="alloc-badge badge-na" id="alloc-badge">Waiting...</div>
+            </div>
+            <div class="alloc-servers" id="alloc-servers">
+                <div class="empty-processes">Awaiting telemetry...</div>
+                <!-- Servers inserted here dynamically -->
+            </div>
+        </aside>
+
+    </div>
+
+    <script src="charts.js"></script>
+</body>
+
+</html>

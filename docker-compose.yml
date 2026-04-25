@@ -1,0 +1,31 @@
+version: "3"
+
+services:
+
+  api:
+    build: .
+    container_name: load_balancer_api
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mysql
+    environment:
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: d1i2n3a4
+      DB_NAME: load_balancer
+
+  mysql:
+    image: mysql:8
+    container_name: load_balancer_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: d1i2n3a4
+      MYSQL_DATABASE: load_balancer
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
